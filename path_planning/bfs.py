@@ -1,23 +1,32 @@
 from collections import deque
 
 def bfs(grid, start, goal):
-    h, w = len(grid), len(grid[0])
-    moves = [(0,1),(1,0),(0,-1),(-1,0)]
-    queue = deque([(start, [start])])
+    """Breadth-First Search (yields visited cells, then final path)."""
+    queue = deque([start])
+    came_from = {}
     visited = set([start])
 
     while queue:
-        current, path = queue.popleft()
-        yield ("visit", current)   # 🔵 exploration step
+        current = queue.popleft()
+        yield ("visit", current)
 
         if current == goal:
-            yield ("path", path)   # 🔴 final path
+            # reconstruct path
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            path.reverse()
+            yield ("path", path)
             return
 
-        for dx, dy in moves:
-            nx, ny = current[0]+dx, current[1]+dy
-            if 0 <= nx < h and 0 <= ny < w and grid[nx][ny] == 0:
-                neighbor = (nx, ny)
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, path+[neighbor]))
+        y, x = current
+        for dy, dx in [(1,0),(-1,0),(0,1),(0,-1)]:
+            neighbor = (y+dy, x+dx)
+            if (0 <= neighbor[0] < grid.shape[0] and 
+                0 <= neighbor[1] < grid.shape[1] and 
+                grid[neighbor] == 0 and neighbor not in visited):
+                visited.add(neighbor)
+                came_from[neighbor] = current
+                queue.append(neighbor)

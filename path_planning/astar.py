@@ -1,31 +1,47 @@
 import heapq
 
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
 def astar(grid, start, goal):
-    h, w = len(grid), len(grid[0])
-    moves = [(0,1),(1,0),(0,-1),(-1,0)]
+    """A* search (yields visited cells, then final path)."""
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: heuristic(start, goal)}
 
-    def heuristic(a, b):
-        return abs(a[0]-b[0]) + abs(a[1]-b[1])  # Manhattan distance
-
-    open_set = [(0+heuristic(start,goal), 0, start, [start])]
     visited = set()
 
     while open_set:
-        _, cost, current, path = heapq.heappop(open_set)
+        _, current = heapq.heappop(open_set)
+
         if current in visited:
             continue
         visited.add(current)
 
-        # 🔵 Yield each visited node during search
         yield ("visit", current)
 
         if current == goal:
-            # 🔴 When found, yield the final path
+            # reconstruct path
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            path.reverse()
             yield ("path", path)
             return
 
-        for dx, dy in moves:
-            nx, ny = current[0]+dx, current[1]+dy
-            if 0 <= nx < h and 0 <= ny < w and grid[nx][ny] == 0:
-                heapq.heappush(open_set,
-                               (cost+1+heuristic((nx,ny),goal), cost+1, (nx,ny), path+[(nx,ny)]))
+        y, x = current
+        for dy, dx in [(1,0),(-1,0),(0,1),(0,-1)]:
+            neighbor = (y+dy, x+dx)
+            if (0 <= neighbor[0] < grid.shape[0] and 
+                0 <= neighbor[1] < grid.shape[1] and 
+                grid[neighbor] == 0):
+                tentative_g = g_score[current] + 1
+                if tentative_g < g_score.get(neighbor, float("inf")):
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g
+                    f_score[neighbor] = tentative_g + heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))

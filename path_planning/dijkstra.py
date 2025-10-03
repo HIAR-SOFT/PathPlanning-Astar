@@ -1,25 +1,41 @@
 import heapq
 
 def dijkstra(grid, start, goal):
-    h, w = len(grid), len(grid[0])
-    moves = [(0,1),(1,0),(0,-1),(-1,0)]
-    open_set = [(0, start, [start])]
+    """Dijkstra’s Algorithm (yields visited cells, then final path)."""
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    dist = {start: 0}
     visited = set()
 
     while open_set:
-        cost, current, path = heapq.heappop(open_set)
+        cost, current = heapq.heappop(open_set)
+
         if current in visited:
             continue
         visited.add(current)
 
-        yield ("visit", current)   #  exploration step
+        yield ("visit", current)
 
         if current == goal:
-            yield ("path", path)   # final path
+            # reconstruct path
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            path.reverse()
+            yield ("path", path)
             return
 
-        for dx, dy in moves:
-            nx, ny = current[0]+dx, current[1]+dy
-            if 0 <= nx < h and 0 <= ny < w and grid[nx][ny] == 0:
-                neighbor = (nx, ny)
-                heapq.heappush(open_set, (cost+1, neighbor, path+[neighbor]))
+        y, x = current
+        for dy, dx in [(1,0),(-1,0),(0,1),(0,-1)]:
+            neighbor = (y+dy, x+dx)
+            if (0 <= neighbor[0] < grid.shape[0] and 
+                0 <= neighbor[1] < grid.shape[1] and 
+                grid[neighbor] == 0):
+                new_cost = dist[current] + 1
+                if new_cost < dist.get(neighbor, float("inf")):
+                    dist[neighbor] = new_cost
+                    came_from[neighbor] = current
+                    heapq.heappush(open_set, (new_cost, neighbor))
